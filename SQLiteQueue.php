@@ -1,16 +1,32 @@
 <?php
 
+class SQLiteQueue_Exception  extends Exception { }
 class SQLiteQueue {
 
     protected $file_db = null;
+    protected $type    = null;
     protected $dbh     = null;
     
-    public function __construct($file_db = null) {
+    public function __construct($file_db = null, $type = 'lifo') {
+        // where is the queue database ?
         if (!$file_db) {
             $this->file_db = dirname(__FILE__).'/queue.db';
         } else {
             $this->file_db = $file_db;
         }
+        
+        // FIFO or LIFO queue ?
+        $this->type = $type;
+        $types = array('lifo', 'fifo');
+        if (!in_array($this->type, $types)) {
+            throw new SQLiteQueue_Exception('Unknown queue type. Only '.implode(' or ', $types).' are valid types.');
+        }
+    }
+
+    public function __destruct() {
+        // to be sure that PDO instance is destroyed
+        unset($this->dbh);
+        $this->dbh = null;
     }
     
     protected function initQueue()
@@ -43,7 +59,7 @@ class SQLiteQueue {
         $this->initQueue();
 
         // récupération de l'élément
-        $stmt = $this->dbh->query('SELECT * FROM queue ORDER BY id LIMIT 1');
+        $stmt = $this->dbh->query('SELECT * FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($result) {
