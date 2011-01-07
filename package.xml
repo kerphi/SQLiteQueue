@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.9.0" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0     http://pear.php.net/dtd/tasks-1.0.xsd     http://pear.php.net/dtd/package-2.0     http://pear.php.net/dtd/package-2.0.xsd">
+    <name>SQLiteQueue</name>
+    <channel>pear.micropolia.com</channel>
+    <summary>A simple PHP5 queue system</summary>
+    <description>A simple PHP5 queue system based on SQLite for storage (using BLOB)</description>
+    <lead>
+        <name>Stéphane Gully</name>
+        <user>kerphi</user>
+        <email>stephane.gully@gmail.com</email>
+        <active>yes</active>
+    </lead>
+    <date>2011-01-07</date>
+    <time>00:00:00</time>
+    <version>
+        <release>1.0.0</release>
+        <api>1.0.0</api>
+    </version>
+    <stability>
+        <release>stable</release>
+        <api>stable</api>
+    </stability>
+     <license uri="http://opensource.org/licenses/bsd-license.php">BSD Licence</license>
+    <notes>-</notes>
+    <contents>
+        <dir name="/">
+            <file name="SQLiteQueue.php" role="php" />
+            <file name="test.php" role="test" />
+            <file name="README" role="doc" />
+        </dir>
+    </contents>
+    <dependencies>
+        <required>
+            <php>
+                <min>5.2.0</min>
+            </php>
+            <pearinstaller>
+                <min>1.4.0</min>
+            </pearinstaller>
+            <extension>
+                <name>sqlite</name>
+            </extension>
+            <extension>
+                <name>pdo</name>
+            </extension>
+        </required>
+    </dependencies>
+    <phprelease />
+</package>
