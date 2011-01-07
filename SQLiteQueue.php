@@ -7,7 +7,7 @@ class SQLiteQueue {
     
     public function __construct($file_db = null) {
         if (!$file_db) {
-            $this->file_db = dirname(__FILE__).'/'.basename(__FILE__).'.sq3';
+            $this->file_db = dirname(__FILE__).'/queue.db';
         } else {
             $this->file_db = $file_db;
         }
