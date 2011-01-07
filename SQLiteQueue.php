@@ -15,18 +15,9 @@ class SQLiteQueue {
     
     protected function initQueue()
     {
-        $db_exists = file_exists($this->file_db);
-
-        try {
-            $this->dbh = new PDO('sqlite:'.$this->file_db);
-        } catch( PDOException $exception ) {
-            die($exception->getMessage());
-        }
-
-        if (!$db_exists) {
-            $this->dbh->exec('PRAGMA auto_vacuum = 1');
-            $this->dbh->exec('CREATE TABLE queue(id INTEGER PRIMARY KEY AUTOINCREMENT, date TIMESTAMP NOT NULL default CURRENT_TIMESTAMP, item BLOB)');
-        }
+        $this->dbh = new PDO('sqlite:'.$this->file_db);
+        $this->dbh->exec('PRAGMA auto_vacuum = 1');
+        $this->dbh->exec('CREATE TABLE queue(id INTEGER PRIMARY KEY AUTOINCREMENT, date TIMESTAMP NOT NULL default CURRENT_TIMESTAMP, item BLOB)');
     }
 
     /**
