@@ -46,3 +46,12 @@ if ($queue->poll() != $item1) $fail = true;
 } else {
     echo "[FAIL] FIFO queue\n";
 }
+
+// push/pop one big item
+$item = str_pad('_', 10000000, '_');
+$queue->offer($item);
+ if (strlen($queue->poll()) == strlen($item)) {
+    echo "[PASS] Offer/poll with one big item\n";
+} else {
+    echo "[FAIL] Offer/poll with one big item\n";
+}
