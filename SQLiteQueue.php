@@ -6,7 +6,7 @@ class SQLiteQueue {
     protected $file_db = null;
     protected $type    = null;
     protected $dbh     = null;
-    
+
     public function __construct($file_db = null, $type = 'lifo') {
         // where is the queue database ?
         if (!$file_db) {
@@ -24,15 +24,17 @@ class SQLiteQueue {
     }
 
     public function __destruct() {
+        // to be sure the database used space is optimized
+        $this->dbh->exec('VACUUM');
+
         // to be sure that PDO instance is destroyed
         unset($this->dbh);
         $this->dbh = null;
     }
-    
+
     protected function initQueue()
     {
         $this->dbh = new PDO('sqlite:'.$this->file_db);
-        $this->dbh->exec('PRAGMA auto_vacuum = 1');
         $this->dbh->exec('CREATE TABLE queue(id INTEGER PRIMARY KEY AUTOINCREMENT, date TIMESTAMP NOT NULL default CURRENT_TIMESTAMP, item BLOB)');
     }
 
@@ -58,22 +60,22 @@ class SQLiteQueue {
     {
         $this->initQueue();
 
-        // récupération de l'élément
-        $stmt = $this->dbh->query('SELECT * FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($result) {
-            // destruction de l'élément
-            $stmt = $this->dbh->prepare('DELETE FROM queue WHERE id = :id');
-            $stmt->bindParam(':id', $result['id'], PDO::PARAM_INT);
-            $stmt->execute();
-
+        // get item using transaction to avoid concurrency problems
+        $this->dbh->exec('BEGIN EXCLUSIVE TRANSACTION');
+        $stmt_del = $this->dbh->prepare('DELETE FROM queue WHERE id = :id');
+        $stmt_sel = $this->dbh->query('SELECT id,item FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
+        if ($result = $stmt_sel->fetch(PDO::FETCH_ASSOC)) {
+            // destroy item from the queue and return it
+            $stmt_del->bindParam(':id', $result['id'], PDO::PARAM_INT);
+            $stmt_del->execute();
+            $this->dbh->exec('COMMIT');
             return unserialize($result['item']);
         } else {
+            $this->dbh->exec('ROLLBACK');
             return NULL;
         }
     }
-    
+
     /**
      * Check if the queue is empty
      */
@@ -89,9 +91,10 @@ class SQLiteQueue {
     {
         $this->initQueue();
 
-        // récupération du nombre d'éléments
+        // get the total number of items
         $stmt = $this->dbh->query('SELECT count(id) as nb FROM queue');
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return isset($result['nb']) ? (integer)$result['nb'] : 0;
     }
+
 }
