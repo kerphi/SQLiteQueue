@@ -6,6 +6,7 @@ class SQLiteQueue {
     protected $file_db = null;
     protected $type    = null;
     protected $dbh     = null;
+    protected $usetransaction = true;
 
     public function __construct($file_db = null, $type = 'lifo') {
         // where is the queue database ?
@@ -20,6 +21,11 @@ class SQLiteQueue {
         $types = array('lifo', 'fifo');
         if (!in_array($this->type, $types)) {
             throw new SQLiteQueue_Exception('Unknown queue type. Only '.implode(' or ', $types).' are valid types.');
+        }
+
+        // if used on old php, transactions doesn't work (tested on debian lenny)
+        if (version_compare(PHP_VERSION, '5.3.3') < 0) {
+            $this->usetransaction = false;
         }
     }
 
@@ -63,17 +69,23 @@ class SQLiteQueue {
         $this->initQueue();
 
         // get item using transaction to avoid concurrency problems
-        $this->dbh->exec('BEGIN EXCLUSIVE TRANSACTION');
+        if ($this->usetransaction) {
+            $this->dbh->exec('BEGIN EXCLUSIVE TRANSACTION');
+        }
         $stmt_del = $this->dbh->prepare('DELETE FROM queue WHERE id = :id');
         $stmt_sel = $this->dbh->query('SELECT id,item FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
         if ($result = $stmt_sel->fetch(PDO::FETCH_ASSOC)) {
             // destroy item from the queue and return it
             $stmt_del->bindParam(':id', $result['id'], PDO::PARAM_INT);
             $stmt_del->execute();
-            $this->dbh->exec('COMMIT');
+            if ($this->usetransaction) {
+                $this->dbh->exec('COMMIT');
+            }
             return unserialize($result['item']);
         } else {
-            $this->dbh->exec('ROLLBACK');
+            if ($this->usetransaction) {
+                $this->dbh->exec('ROLLBACK');
+            }
             return NULL;
         }
     }
