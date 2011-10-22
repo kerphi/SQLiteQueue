@@ -25,7 +25,9 @@ class SQLiteQueue {
 
     public function __destruct() {
         // to be sure the database used space is optimized
-        $this->dbh->exec('VACUUM');
+        if ($this->dbh) {
+            $this->dbh->exec('VACUUM');
+        }
 
         // to be sure that PDO instance is destroyed
         unset($this->dbh);
