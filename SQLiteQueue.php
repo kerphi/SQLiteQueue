@@ -42,8 +42,10 @@ class SQLiteQueue {
 
     protected function initQueue()
     {
-        $this->dbh = new PDO('sqlite:'.$this->file_db);
-        $this->dbh->exec('CREATE TABLE queue(id INTEGER PRIMARY KEY AUTOINCREMENT, date TIMESTAMP NOT NULL default CURRENT_TIMESTAMP, item BLOB)');
+        if (!$this->dbh) {
+            $this->dbh = new PDO('sqlite:'.$this->file_db);
+            $this->dbh->exec('CREATE TABLE queue(id INTEGER PRIMARY KEY AUTOINCREMENT, date TIMESTAMP NOT NULL default CURRENT_TIMESTAMP, item BLOB)');
+        }
     }
 
     /**

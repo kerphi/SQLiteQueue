@@ -10,10 +10,10 @@
         <email>stephane.gully@gmail.com</email>
         <active>yes</active>
     </lead>
-    <date>2011-10-22</date>
+    <date>2011-11-10</date>
     <time>00:00:00</time>
     <version>
-        <release>1.0.5</release>
+        <release>1.0.6</release>
         <api>1.0.0</api>
     </version>
     <stability>
