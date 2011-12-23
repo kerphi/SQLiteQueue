@@ -3,9 +3,10 @@
 class SQLiteQueue_Exception  extends Exception { }
 class SQLiteQueue {
 
-    protected $file_db = null;
-    protected $type    = null;
-    protected $dbh     = null;
+    protected $file_db        = null;
+    protected $file_db_lock   = null;
+    protected $type           = null;
+    protected $dbh            = null;
     protected $usetransaction = true;
 
     public function __construct($file_db = null, $type = 'lifo') {
@@ -15,7 +16,8 @@ class SQLiteQueue {
         } else {
             $this->file_db = $file_db;
         }
-        
+        $this->file_db_lock = $file_db.'.lock';
+
         // FIFO or LIFO queue ?
         $this->type = $type;
         $types = array('lifo', 'fifo');
@@ -53,6 +55,11 @@ class SQLiteQueue {
      */
     public function offer($item)
     {
+        if (!$this->usetransaction) {
+            $fp = fopen($this->file_db_lock, "w");
+            flock($fp, LOCK_EX);
+        }
+
         $this->initQueue();
 
         // convert $item to string
@@ -60,7 +67,13 @@ class SQLiteQueue {
 
         $stmt = $this->dbh->prepare('INSERT INTO queue (item) VALUES (:item)');
         $stmt->bindParam(':item', $item, PDO::PARAM_STR);
-        return $stmt->execute();
+        $ret = $stmt->execute();
+        
+        if (!$this->usetransaction) {
+            flock($fp, LOCK_UN);
+        }
+
+        return $ret;
     }
 
     /**
@@ -68,25 +81,35 @@ class SQLiteQueue {
      */
     public function poll()
     {
+        if (!$this->usetransaction) {
+            $fp = fopen($this->file_db_lock, "w");
+            flock($fp, LOCK_EX);
+        }
+        
         $this->initQueue();
 
         // get item using transaction to avoid concurrency problems
         if ($this->usetransaction) {
             $this->dbh->exec('BEGIN EXCLUSIVE TRANSACTION');
         }
+        
         $stmt_del = $this->dbh->prepare('DELETE FROM queue WHERE id = :id');
         $stmt_sel = $this->dbh->query('SELECT id,item FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
-        if ($result = $stmt_sel->fetch(PDO::FETCH_ASSOC)) {
+        if ($stmt_sel and $result = $stmt_sel->fetch(PDO::FETCH_ASSOC)) {
             // destroy item from the queue and return it
             $stmt_del->bindParam(':id', $result['id'], PDO::PARAM_INT);
             $stmt_del->execute();
             if ($this->usetransaction) {
                 $this->dbh->exec('COMMIT');
+            } else {
+                flock($fp, LOCK_UN);
             }
             return unserialize($result['item']);
         } else {
             if ($this->usetransaction) {
                 $this->dbh->exec('ROLLBACK');
+            } else {
+                flock($fp, LOCK_UN);
             }
             return NULL;
         }
@@ -109,8 +132,11 @@ class SQLiteQueue {
 
         // get the total number of items
         $stmt = $this->dbh->query('SELECT count(id) as nb FROM queue');
+        if (!$stmt) return 0;
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return isset($result['nb']) ? (integer)$result['nb'] : 0;
+        $ret = isset($result['nb']) ? (integer)$result['nb'] : 0;
+        
+        return $ret;
     }
 
 }

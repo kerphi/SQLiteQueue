@@ -2,7 +2,7 @@
 <?php
 
 include_once 'SQLiteQueue.php';
-$queuedb = dirname(__FILE__).'/test.db';
+$queuedb = dirname(__FILE__).'/'.uniqid('test').'.db';
 $queue = new SQLiteQueue($queuedb, 'lifo');
 
 // push/pop one item
