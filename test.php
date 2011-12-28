@@ -55,3 +55,5 @@ $queue->offer($item);
 } else {
     echo "[FAIL] Offer/poll with one big item\n";
 }
+
+unlink($queuedb);
