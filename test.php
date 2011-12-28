@@ -1,6 +1,8 @@
 #!/usr/bin/php
 <?php
 
+ini_set('memory_limit', -1);
+
 include_once 'SQLiteQueue.php';
 $queuedb = dirname(__FILE__).'/'.uniqid('test').'.db';
 $queue = new SQLiteQueue($queuedb, 'lifo');
