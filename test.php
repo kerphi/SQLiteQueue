@@ -34,7 +34,7 @@ if ($queue->poll() != $item3) $fail = true;
 }
 
 // fifo test
-unlink($queuedb);
+unlink($queue->getQueueFile());
 $queue = new SQLiteQueue($queuedb, 'fifo');
 $item1 = 'XXX1';
 $queue->offer($item1);
@@ -58,4 +58,4 @@ $queue->offer($item);
     echo "[FAIL] Offer/poll with one big item\n";
 }
 
-unlink($queuedb);
+unlink($queue->getQueueFile());
