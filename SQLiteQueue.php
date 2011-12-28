@@ -34,7 +34,7 @@ class SQLiteQueue {
 
     public function __destruct() {
         if (!$this->usetransaction) {
-            unlink($this->file_db_lock);
+            @unlink($this->file_db_lock);
             return;
         }
         
