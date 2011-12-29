@@ -8,6 +8,7 @@ class SQLiteQueue {
     protected $type           = null;
     protected $dbh            = null;
     protected $usetransaction = true;
+    protected $lock_fp        = null;
 
     public function __construct($file_db = null, $type = 'lifo') {
         // where is the queue database ?
@@ -36,16 +37,27 @@ class SQLiteQueue {
         if (!$this->usetransaction) {
             @unlink($this->file_db_lock);
             return;
-        }
-        
-        // to be sure the database used space is optimized
-        if ($this->dbh) {
-            $this->dbh->exec('VACUUM');
-        }
+        } else {
+            // to be sure the database used space is optimized
+            if ($this->dbh) {
+                $this->dbh->exec('VACUUM');
+            }
 
-        // to be sure that PDO instance is destroyed
-        unset($this->dbh);
-        $this->dbh = null;
+            // to be sure that PDO instance is destroyed
+            unset($this->dbh);
+            $this->dbh = null;
+        }
+    }
+    
+    protected function lockQueue()
+    {
+        $this->lock_fp = fopen($this->file_db_lock, "w");
+        flock($this->lock_fp, LOCK_EX);
+    }
+    
+    protected function unlockQueue()
+    {
+        flock($this->lock_fp, LOCK_UN);
     }
     
     public function getQueueFile()
@@ -71,8 +83,7 @@ class SQLiteQueue {
     public function offer($item)
     {
         if (!$this->usetransaction) {
-            $fp = fopen($this->file_db_lock, "w");
-            flock($fp, LOCK_EX);
+            $this->lockQueue();
         }
 
         $this->initQueue();
@@ -91,7 +102,7 @@ class SQLiteQueue {
         }
 
         if (!$this->usetransaction) {
-            flock($fp, LOCK_UN);
+            $this->unlockQueue();
         }
 
         return $ret;
@@ -103,8 +114,7 @@ class SQLiteQueue {
     public function poll()
     {
         if (!$this->usetransaction) {
-            $fp = fopen($this->file_db_lock, "w");
-            flock($fp, LOCK_EX);
+            $this->lockQueue();
         }
         
         $this->initQueue();
@@ -117,10 +127,10 @@ class SQLiteQueue {
                 $item = ($this->type == 'lifo') ? array_shift($items) : array_pop($items);
                 $item = unserialize(base64_decode($item));
                 file_put_contents($this->file_db, implode("\n", $items), LOCK_EX);
-                flock($fp, LOCK_UN);
+                $this->unlockQueue();
                 return $item;
             } else {
-                flock($fp, LOCK_UN);
+                $this->unlockQueue();
                 return NULL;
             }
         } else {
@@ -156,8 +166,7 @@ class SQLiteQueue {
     public function countItem()
     {
         if (!$this->usetransaction) {
-            $fp = fopen($this->file_db_lock, "w");
-            flock($fp, LOCK_EX);
+            $this->lockQueue();
         }
         
         $this->initQueue();
@@ -175,7 +184,7 @@ class SQLiteQueue {
         }
         
         if (!$this->usetransaction) {
-            flock($fp, LOCK_UN);
+            $this->unlockQueue();
         }
         
         return $ret;
