@@ -33,4 +33,5 @@ fi
 # commit the package.xml and tag the version
 git commit -m "Version $RELEASE" package.xml
 git tag -a -m "Version $RELEASE" $RELEASE
+git push --all
 git push --tags
