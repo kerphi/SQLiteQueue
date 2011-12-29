@@ -9,8 +9,18 @@ $queue = new SQLiteQueue($queuedb, 'lifo');
 
 // push/pop one item
 $item = 'XXX';
+if ($queue->countItem() == 0) {
+    echo "[PASS] countItem with empty queue\n";
+} else {
+    echo "[FAIL] countItem with empty queue\n";
+}
 $queue->offer($item);
- if ($queue->poll() == $item) {
+if ($queue->countItem() == 1) {
+    echo "[PASS] countItem with one item\n";
+} else {
+    echo "[FAIL] countItem with one item\n";
+}
+if ($queue->poll() == $item) {
     echo "[PASS] Offer/poll with one item\n";
 } else {
     echo "[FAIL] Offer/poll with one item\n";

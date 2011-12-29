@@ -164,6 +164,7 @@ class SQLiteQueue {
         
         if (!$this->usetransaction) {
             $items = explode("\n", file_get_contents($this->file_db));
+            if (!$items[0]) array_shift($items);
             $ret = count($items);
         } else {
             // get the total number of items
