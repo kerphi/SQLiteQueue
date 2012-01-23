@@ -138,6 +138,11 @@ class SQLiteQueue {
             $this->dbh->exec('BEGIN EXCLUSIVE TRANSACTION');
             $stmt_del = $this->dbh->prepare('DELETE FROM queue WHERE id = :id');
             $stmt_sel = $this->dbh->query('SELECT id,item FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
+            // workaround a bug : sometimes I got a SQLite "database schema has changed"
+            // strangely playing this query twice solve the problem
+            if (!$stmt_sel) {
+                $stmt_sel = $this->dbh->query('SELECT id,item FROM queue ORDER BY id '.($this->type == 'lifo' ? 'ASC' : 'DESC').' LIMIT 1');
+            }
             if ($stmt_sel and $result = $stmt_sel->fetch(PDO::FETCH_ASSOC)) {
                 // destroy item from the queue and return it
                 $stmt_del->bindParam(':id', $result['id'], PDO::PARAM_INT);
@@ -145,6 +150,7 @@ class SQLiteQueue {
                 $this->dbh->exec('COMMIT');
                 return unserialize($result['item']);
             } else {
+                trigger_error('SQLiteQueue error: '.implode(' - ', $this->dbh->errorInfo()), E_USER_WARNING);
                 $this->dbh->exec('ROLLBACK');
                 return NULL;
             }
